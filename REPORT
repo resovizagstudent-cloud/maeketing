@@ -1,0 +1,89 @@
+{
+  "USER_UID_1": {
+    "name": "Ravi",
+    "role": "employee"
+  },
+  "USER_UID_2": {
+    "name": "Admin1",
+    "role": "admin"
+  }
+}
+function login() {
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
+
+  auth.signInWithEmailAndPassword(email, password)
+    .then(async (userCredential) => {
+      const user = userCredential.user;
+
+      const doc = await db.collection("users").doc(user.uid).get();
+
+      if (!doc.exists) {
+        alert("User role not assigned");
+        return;
+      }
+
+      const role = doc.data().role;
+
+      if (role === "admin") {
+        window.location.href = "dashboard.html";
+      } else {
+        window.location.href = "report.html";
+      }
+    })
+    auth.onAuthStateChanged(async (user) => {
+  if (!user) {
+    window.location.href = "index.html";
+    return;
+  }
+
+  const doc = await db.collection("users").doc(user.uid).get();
+  if (doc.data().role !== "employee") {
+    alert("Access denied");
+    window.location.href = "index.html";
+  }
+});
+auth.onAuthStateChanged(async (user) => {
+  if (!user) {
+    window.location.href = "index.html";
+    return;
+  }
+
+  const doc = await db.collection("users").doc(user.uid).get();
+  if (doc.data().role !== "admin") {
+    alert("Access denied");
+    window.location.href = "index.html";
+  }
+});
+function submitReport() {
+  const user = auth.currentUser;
+
+  db.collection("users").doc(user.uid).get().then(doc => {
+    const name = doc.data().name;
+
+    db.collection("reports").add({
+      userId: user.uid,
+      name: name,
+      date: document.getElementById("date").value,
+      totalCalling: Number(document.getElementById("totalCalling").value),
+      connectedCalls: Number(document.getElementById("connectedCalls").value),
+      positiveCalls: Number(document.getElementById("positiveCalls").value),
+      doorVisiting: Number(document.getElementById("doorVisiting").value),
+      closedAdmission: Number(document.getElementById("closedAdmission").value),
+      created: new Date()
+    }).then(() => alert("Submitted"));
+  });
+}
+let userWise = {};
+
+snapshot.forEach(doc => {
+  let d = doc.data();
+
+  if (!userWise[d.name]) {
+    userWise[d.name] = 0;
+  }
+
+  userWise[d.name] += d.totalCalling;
+});
+    .catch(err => alert(err.message));
+}
